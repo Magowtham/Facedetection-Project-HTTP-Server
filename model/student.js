@@ -6,6 +6,7 @@ const Student=mongoose.Schema({
     name:{type:String,required:true},
     email:{type:String,required:true},
     contact_number:{type:String,required:true},
+    total_class:{type:String,default:"0"},
     attended_class:{type:String,default:"0"},
     percent:{type:String,default:"0%"}
 })
