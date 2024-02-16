@@ -18,31 +18,28 @@ const BokrerURL="";
 //database connection
 connectDB();
 
-// const client=mqtt.connect();
+const client=mqtt.connect("mqtt://localhost:1883");
 
-// client.on("connect",()=>{
-//     console.log("connected to MQTT broker");
-// })
+client.on("connect",()=>{
+    console.log("connected to MQTT broker");
+})
 
-// client.on("error",(err)=>{
-//     console.log(`MQTT error : ${err}`);
-// })
+client.on("error",(err)=>{
+    console.log(`MQTT error : ${err}`);
+})
 
-// client.on("close",()=>{
-//     console.log("disconnected from MQTT broker");
-// })
+client.on("close",()=>{
+    console.log("disconnected from MQTT broker");
+})
 
-app.get("/start",(req,res)=>{
+app.post("/start",(req,res)=>{
     const {time}=req.body;
-    const topic="http";
+    const topic="pii";
     try{
-        client.publish(topic,{st:1});
-
-         setTimeout(()=>{
-            client.publish(topic,{st:0});
-        },time*1000);
-
+        client.publish(topic,JSON.stringify({st:1,tm:Number(time)}));
+        res.status(200).json({message:"face detection started"})
     }catch(error){
+        res.status(500).json({error:"oops something went wrong!"})
         console.log(error);
     }
     
@@ -71,7 +68,7 @@ app.post("/register",async (req,res)=>{
     }
 })
 
-app.get("/students",async (req,res)=>{
+app.get("/users",async (req,res)=>{
     try{
         const students=await StudentSchema.find();
         res.status(200).json({students});
@@ -115,6 +112,36 @@ app.post("/login",async (req,res)=>{
         res.status(500).json({error:"oops something went wrong!"})
     }
    
+})
+
+app.post("/update",async (req,res)=>{
+	const {usn}=req.body;
+	try{
+        const [isUserExists]=await StudentSchema.find({usn});
+	
+    if(!isUserExists){
+        res.status(400).json({error:"user not exists"});
+        return;
+    }
+
+    console.log(isUserExists);
+	
+    const attendedClases=Number(isUserExists.attended_class);
+    console.log(attendedClases);
+    const totalNumberOfClasses=Number(isUserExists.total_class);
+    console.log(totalNumberOfClasses);
+    const percent=(Number(isUserExists.percent)/Number(totalNumberOfClasses))*100;
+
+    console.log(percent);
+
+    await StudentSchema.updateOne({usn},{$set:{attended_class:attendedClases+1,percent}});
+
+    res.status(200).json({message:"update successfull"})
+    }catch(error){
+        console.log(error);
+        res.status(500).json({error:"something went wrong"});
+    }
+
 })
 
 
